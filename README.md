@@ -1,9 +1,9 @@
 # Interactive-Digital-Quiz-Assessment-Platform
-Project Summary
+# Project Summary
 
 A web-based quiz assessment platform built using HTML, CSS, and JavaScript. The system provides user authentication, timer-based quiz execution, automated scoring, feedback collection, and an admin dashboard for monitoring submissions. It integrates core Data Structures and Algorithms concepts within a modular front-end architecture.
 
-Features
+# Features
 
 User registration and login system
 
