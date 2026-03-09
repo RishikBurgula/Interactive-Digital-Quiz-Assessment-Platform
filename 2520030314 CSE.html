@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Interactive Digital Quiz Assessment Platform</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI;
+  background:#bae6fd;
+  color:#0f172a;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.container{
+  background:#e0f2fe;
+  padding:30px;
+  border-radius:18px;
+  width:780px;
+  box-shadow:0 20px 50px rgba(0,0,0,.2);
+  max-height:95vh;
+  overflow-y:auto;
+}
+h1,h2{text-align:center;margin-top:0}
+.author{text-align:center;font-size:14px;margin-bottom:20px}
+input, textarea{
+  width:100%;
+  padding:10px;
+  margin-bottom:12px;
+  border:1px solid #94a3b8;
+  border-radius:8px;
+}
+button{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.primary{background:#16a34a;color:white}
+.secondary{background:#0ea5e9;color:white}
+.danger{background:#c084fc;color:black}
+.option{background:#fbcfe8;color:#831843}
+.option:hover{background:#f9a8d4}
+.correct{background:#16a34a;color:white}
+.wrong{background:#dc2626;color:white}
+#timer{font-weight:bold;color:#f59e0b;margin-bottom:10px}
+.reportBox{
+  background:#dbeafe;
+  padding:15px;
+  border-radius:10px;
+  margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>Interactive Digital Quiz Assessment Platform</h1>
+<div class="author">Developed by: <b>Burgula Rishik</b></div>
+
+<!-- LOGIN -->
+<div id="loginSection">
+<h2>Login</h2>
+<input id="loginUser" placeholder="Username">
+<input type="password" id="loginPass" placeholder="Password">
+<button class="primary" onclick="login()">Login</button>
+<button class="secondary" onclick="showRegister()">Create Account</button>
+</div>
+
+<!-- REGISTER -->
+<div id="registerSection" style="display:none;">
+<h2>Create Account</h2>
+<input id="regUser" placeholder="Username">
+<input type="password" id="regPass" placeholder="Password">
+<button class="primary" onclick="register()">Register</button>
+<button class="secondary" onclick="showLogin()">Back to Login</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" style="display:none;">
+<h2>Admin Dashboard</h2>
+<div id="feedbackList"></div>
+<button class="secondary" onclick="logout()">Logout</button>
+</div>
+
+<!-- USER HOME -->
+<div id="home" style="display:none;">
+<h2>Start Quiz</h2>
+<input type="number" id="qcount" placeholder="Number of Questions (1-5)" min="1" max="5">
+<button class="primary" onclick="startQuiz()">Start Quiz</button>
+<button class="danger" onclick="logout()">Logout</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" style="display:none;">
+<h2>Quiz in Progress</h2>
+<div id="timer"></div>
+<div id="question"></div>
+<div id="options"></div>
+<button class="secondary" id="next" style="display:none;">Next</button>
+</div>
+
+</div>
+
+<script>
+
+// =========================
+// DEFAULT ADMIN CREATION
+// =========================
+(function(){
+let users = JSON.parse(localStorage.getItem("users")) || {};
+if(!users["admin"]){
+users["admin"] = "admin123";
+localStorage.setItem("users", JSON.stringify(users));
+}
+})();
+
+// =========================
+// AUTH SYSTEM
+// =========================
+function register(){
+let user=regUser.value.trim();
+let pass=regPass.value.trim();
+if(!user||!pass){alert("Enter valid details");return;}
+let users=JSON.parse(localStorage.getItem("users"))||{};
+if(users[user]){alert("User exists");return;}
+users[user]=pass;
+localStorage.setItem("users",JSON.stringify(users));
+alert("Account created");
+showLogin();
+}
+
+function login(){
+let user=loginUser.value.trim();
+let pass=loginPass.value.trim();
+let users=JSON.parse(localStorage.getItem("users"))||{};
+if(users[user] && users[user]===pass){
+localStorage.setItem("currentUser",user);
+if(user==="admin"){ showAdminPanel(); }
+else{
+loginSection.style.display="none";
+home.style.display="block";
+}
+}else alert("Invalid credentials");
+}
+
+function logout(){
+localStorage.removeItem("currentUser");
+location.reload();
+}
+
+function showRegister(){
+loginSection.style.display="none";
+registerSection.style.display="block";
+}
+
+function showLogin(){
+registerSection.style.display="none";
+loginSection.style.display="block";
+}
+
+// =========================
+// ADMIN PANEL
+// =========================
+function showAdminPanel(){
+loginSection.style.display="none";
+adminPanel.style.display="block";
+loadFeedback();
+}
+
+function loadFeedback(){
+let data=JSON.parse(localStorage.getItem("feedback"))||[];
+let html="";
+if(data.length===0) html="<p>No feedback available.</p>";
+else{
+data.forEach(item=>{
+html+=`
+<div class='reportBox'>
+<p><b>User:</b> ${item.user}</p>
+<p><b>Score:</b> ${item.score}</p>
+<p><b>Date:</b> ${item.date}</p>
+<p><b>Feedback:</b> ${item.feedback}</p>
+</div>`;
+});
+}
+feedbackList.innerHTML=html;
+}
+
+// =========================
+// DSA STRUCTURES
+// =========================
+const allQuestions=[
+{q:"Largest planet?",o:["Earth","Jupiter","Mars","Saturn"],a:1},
+{q:"Capital of Japan?",o:["Tokyo","Osaka","Kyoto","Nagoya"],a:0},
+{q:"Father of Nation (India)?",o:["Nehru","Bose","Gandhi","Patel"],a:2},
+{q:"Gas used in photosynthesis?",o:["Oxygen","CO2","Nitrogen","Hydrogen"],a:1},
+{q:"CPU stands for?",o:["Central Processing Unit","Control Power Unit","Core Processing Utility","Computer Processing Unit"],a:0}
+];
+
+let questionQueue=[];   // Queue
+let answerStack=[];     // Stack
+let resultHash={};      // Hash
+
+let current=null;
+let score=0;
+let timerInterval,timeLeft=15;
+
+// =========================
+// QUIZ LOGIC
+// =========================
+function startQuiz(){
+let count=parseInt(qcount.value);
+if(!count||count<1||count>allQuestions.length){alert("Invalid number");return;}
+questionQueue=[...allQuestions.slice(0,count)];
+answerStack=[];
+resultHash={};
+score=0;
+home.style.display="none";
+quiz.style.display="block";
+loadQuestion();
+}
+
+function startTimer(){
+timeLeft=15;
+timer.textContent="Time Left: "+timeLeft+"s";
+timerInterval=setInterval(()=>{
+timeLeft--;
+timer.textContent="Time Left: "+timeLeft+"s";
+if(timeLeft<=0){clearInterval(timerInterval);loadQuestion();}
+},1000);
+}
+
+function loadQuestion(){
+clearInterval(timerInterval);
+next.style.display="none";
+if(questionQueue.length===0){finishQuiz();return;}
+current=questionQueue.shift(); // Queue
+question.innerHTML="<b>"+current.q+"</b>";
+options.innerHTML="";
+current.o.forEach((opt,i)=>{
+let btn=document.createElement("button");
+btn.textContent=opt;
+btn.className="option";
+btn.onclick=()=>selectAnswer(btn,i);
+options.appendChild(btn);
+});
+startTimer();
+}
+
+function selectAnswer(btn,index){
+clearInterval(timerInterval);
+[...document.querySelectorAll(".option")].forEach(b=>b.disabled=true);
+answerStack.push({question:current.q,selected:index}); // Stack
+resultHash[current.q]=index; // Hash
+if(index===current.a){btn.classList.add("correct");score++;}
+else{btn.classList.add("wrong");}
+next.style.display="block";
+}
+next.onclick=loadQuestion;
+
+function finishQuiz(){
+let total=answerStack.length;
+let percentage=Math.round((score/total)*100);
+quiz.innerHTML=
+"<h2>Quiz Completed</h2>"+
+"<div class='reportBox'>"+
+"<p>Total Questions: "+total+"</p>"+
+"<p>Correct Answers: "+score+"</p>"+
+"<p>Percentage: "+percentage+"%</p>"+
+"</div>"+
+"<h3>Feedback</h3>"+
+"<textarea id='feedbackText' placeholder='Enter feedback'></textarea>"+
+"<button class='primary' onclick='submitFeedback()'>Submit Feedback</button>"+
+"<button class='secondary' onclick='location.reload()'>Home</button>";
+}
+
+function submitFeedback(){
+let feedback=document.getElementById("feedbackText").value.trim();
+if(!feedback){alert("Enter feedback");return;}
+let user=localStorage.getItem("currentUser");
+let data=JSON.parse(localStorage.getItem("feedback"))||[];
+data.push({user,score,feedback,date:new Date().toLocaleString()});
+localStorage.setItem("feedback",JSON.stringify(data));
+alert("Feedback Submitted");
+}
+
+</script>
+</body>
+</html>
