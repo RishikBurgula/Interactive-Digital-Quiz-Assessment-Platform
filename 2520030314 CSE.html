@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Interactive Digital Quiz Assessment Platform</title>
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI;
+  background:#bae6fd;
+  color:#0f172a;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.container{
+  background:#e0f2fe;
+  padding:30px;
+  border-radius:18px;
+  width:780px;
+  box-shadow:0 20px 50px rgba(0,0,0,.2);
+  overflow-y:auto;
+  max-height:95vh;
+}
+h1,h2,h3{text-align:center;margin-top:0}
+.author{text-align:center;font-size:14px;margin-bottom:20px}
+
+input{
+  width:100%;
+  padding:10px;
+  margin-bottom:12px;
+  border:1px solid #94a3b8;
+  border-radius:8px;
+}
+
+button{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+#startBtn{background:#16a34a;color:white}
+#next{background:#0ea5e9;color:white}
+#quitBtn{background:#c084fc;color:black}
+
+.option{background:#fbcfe8;color:#831843}
+.option:hover{background:#f9a8d4}
+
+.correct{background:#16a34a;color:white}
+.wrong{background:#dc2626;color:white}
+
+#timer{font-weight:bold;color:#f59e0b;margin-bottom:10px}
+
+.reportBox{
+  background:#dbeafe;
+  padding:15px;
+  border-radius:10px;
+  margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>Interactive Digital Quiz Assessment Platform</h1>
+<div class="author">
+Developed by: <b>Burgula Rishik</b> CSE 2520030314
+</div>
+
+<div id="home">
+<input id="username" placeholder="Enter your name">
+<input type="number" id="qcount" placeholder="Enter number of questions (1 - 5)" min="1" max="5">
+<button id="startBtn" onclick="startQuiz()">Start Quiz</button>
+</div>
+
+<div id="quiz" style="display:none">
+<h2>Quiz in Progress</h2>
+<div id="timer"></div>
+<div id="question"></div>
+<div id="options"></div>
+<button id="next" style="display:none">Next Question</button>
+<button id="quitBtn" onclick="location.reload()">Quit Quiz</button>
+</div>
+
+</div>
+
+<script>
+
+// =======================
+// DATA STRUCTURES
+// =======================
+
+// Array (Question Bank)
+const allQuestions = [
+{q:"Which planet has the largest mass?",o:["Earth","Jupiter","Mars","Saturn"],a:1},
+{q:"Capital of Japan?",o:["Tokyo","Osaka","Kyoto","Nagoya"],a:0},
+{q:"Father of Nation (India)?",o:["Nehru","Bose","Gandhi","Patel"],a:2},
+{q:"Gas used in photosynthesis?",o:["Oxygen","Carbon Dioxide","Nitrogen","Hydrogen"],a:1},
+{q:"CPU stands for?",o:["Central Processing Unit","Control Power Unit","Core Processing Utility","Computer Processing Unit"],a:0}
+];
+
+// Linked List (CO2)
+class Node{
+  constructor(data){ this.data=data; this.next=null; }
+}
+class LinkedList{
+  constructor(){ this.head=null; }
+  insert(data){
+    const node=new Node(data);
+    node.next=this.head;
+    this.head=node;
+  }
+  traverse(){
+    let temp=this.head;
+    while(temp){ temp=temp.next; }
+  }
+}
+
+// Stack (CO3)
+let answerStack=[];
+
+// Queue (CO3)
+let questionQueue=[];
+
+// Hash Table (CO4)
+let resultHash={};
+
+// =======================
+// ALGORITHMS (CO1)
+// =======================
+
+// Bubble Sort
+function bubbleSort(arr){
+  for(let i=0;i<arr.length;i++){
+    for(let j=0;j<arr.length-i-1;j++){
+      if(arr[j]>arr[j+1]){
+        [arr[j],arr[j+1]]=[arr[j+1],arr[j]];
+      }
+    }
+  }
+  return arr;
+}
+
+// Quick Sort
+function quickSort(arr){
+  if(arr.length<=1) return arr;
+  let pivot=arr[arr.length-1];
+  let left=[],right=[];
+  for(let i=0;i<arr.length-1;i++){
+    if(arr[i]<pivot) left.push(arr[i]);
+    else right.push(arr[i]);
+  }
+  return [...quickSort(left),pivot,...quickSort(right)];
+}
+
+// Binary Search
+function binarySearch(arr,target){
+  let low=0,high=arr.length-1;
+  while(low<=high){
+    let mid=Math.floor((low+high)/2);
+    if(arr[mid]===target) return mid;
+    if(arr[mid]<target) low=mid+1;
+    else high=mid-1;
+  }
+  return -1;
+}
+
+// =======================
+// QUIZ LOGIC
+// =======================
+
+let current=null;
+let score=0;
+let timerInterval,timeLeft=15;
+
+function startQuiz(){
+const name=document.getElementById("username").value.trim();
+const count=parseInt(document.getElementById("qcount").value);
+if(!name||!count||count<1||count>allQuestions.length){alert("Enter valid details");return;}
+
+questionQueue=[...allQuestions.slice(0,count)];
+answerStack=[];
+resultHash={};
+score=0;
+
+document.getElementById("home").style.display="none";
+document.getElementById("quiz").style.display="block";
+loadQuestion();
+}
+
+function startTimer(){
+timeLeft=15;
+document.getElementById("timer").textContent="Time Left: "+timeLeft+"s";
+timerInterval=setInterval(()=>{
+timeLeft--;
+document.getElementById("timer").textContent="Time Left: "+timeLeft+"s";
+if(timeLeft<=0){clearInterval(timerInterval);loadQuestion();}
+},1000);
+}
+
+function loadQuestion(){
+clearInterval(timerInterval);
+document.getElementById("next").style.display="none";
+if(questionQueue.length===0){finishQuiz();return;}
+current=questionQueue.shift(); // Queue
+document.getElementById("question").innerHTML="<b>"+current.q+"</b>";
+let oEl=document.getElementById("options");
+oEl.innerHTML="";
+current.o.forEach((opt,i)=>{
+let btn=document.createElement("button");
+btn.textContent=opt;
+btn.className="option";
+btn.onclick=()=>selectAnswer(btn,i);
+oEl.appendChild(btn);
+});
+startTimer();
+}
+
+function selectAnswer(btn,index){
+clearInterval(timerInterval);
+let buttons=[...document.querySelectorAll(".option")];
+buttons.forEach(b=>b.disabled=true);
+answerStack.push({question:current.q,selected:index}); // Stack
+resultHash[current.q]=index; // Hash
+if(index===current.a){btn.classList.add("correct");score++;}
+else{btn.classList.add("wrong");buttons[current.a].classList.add("correct");}
+document.getElementById("next").style.display="block";
+}
+document.getElementById("next").onclick=loadQuestion;
+
+function finishQuiz(){
+let total=answerStack.length;
+
+// O(n) traversal
+let correct=0;
+for(let ans of answerStack){
+let orig=allQuestions.find(q=>q.q===ans.question);
+if(orig && orig.a===ans.selected) correct++;
+}
+
+// Algorithm demonstrations
+let demo=[10,40,20,30,50];
+bubbleSort(demo);
+quickSort(demo);
+binarySearch(demo,30);
+
+document.getElementById("quiz").innerHTML=
+"<h2>Quiz Completed</h2>"+
+"<div class='reportBox'>"+
+"<p>Total Questions: "+total+"</p>"+
+"<p>Correct Answers: "+correct+"</p>"+
+"<p>Score Percentage: "+Math.round((correct/total)*100)+"%</p>"+
+"</div>"+
+"<button onclick='location.reload()'>Go Home</button>";
+}
+
+</script>
+</body>
+</html>
+
